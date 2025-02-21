@@ -19,6 +19,15 @@ def save_json(data, filepath):
         json.dump(data, f)
     print(f"Saved: {filepath}")
 
+# Function to get current gameweek
+def get_current_gameweek():
+    bootstrap = requests.get(BOOTSTRAP_URL).json()
+    for event in bootstrap["events"]:
+        if event.get("is_current", False):
+            return event["id"]
+    # Fallback: If no current GW, return the latest finished GW or 1
+    return max(event["id"] for event in bootstrap["events"] if event["finished"]) or 1
+
 # Fetch and save data for a specific gameweek
 def fetch_fpl_data(gameweek):
     # Create gameweek-specific subfolder
@@ -50,7 +59,6 @@ def fetch_fpl_data(gameweek):
         save_json(picks, os.path.join(picks_dir, f"picks_{manager_id}_gw{gameweek}.json"))
 
 if __name__ == "__main__":
-    # Example: Fetch data for GW 1 (replace with current GW as needed)
-    current_gw = 1  # You could dynamically determine this from bootstrap["events"]
+    current_gw = get_current_gameweek()
     fetch_fpl_data(current_gw)
     print(f"Data fetched and saved for GW {current_gw} on {datetime.now().strftime('%Y-%m-%d')}")
