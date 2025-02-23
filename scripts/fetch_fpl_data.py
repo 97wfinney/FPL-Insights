@@ -46,17 +46,23 @@ def fetch_fpl_data(gameweek):
     standings = requests.get(OVERALL_LEAGUE_URL).json()
     save_json(standings, os.path.join(gw_dir, f"overall_standings_gw{gameweek}.json"))
 
-    # Get top 10 manager IDs
+    # Get top 10 manager IDs and their picks in a single JSON
     top_10 = standings["standings"]["results"][:10]
-    manager_ids = [entry["entry"] for entry in top_10]
-
-    # Fetch and save picks for top 10 managers
-    picks_dir = os.path.join(gw_dir, "picks")
-    os.makedirs(picks_dir, exist_ok=True)
-    for manager_id in manager_ids:
+    top10_picks = {}
+    for entry in top_10:
+        manager_id = entry["entry"]
         picks_url = PICKS_URL_TEMPLATE.format(manager_id=manager_id, gw=gameweek)
         picks = requests.get(picks_url).json()
-        save_json(picks, os.path.join(picks_dir, f"picks_{manager_id}_gw{gameweek}.json"))
+        top10_picks[manager_id] = {
+            "manager_name": entry["player_name"],
+            "team_name": entry["entry_name"],
+            "picks": picks["picks"],
+            "active_chip": picks.get("active_chip", None)
+        }
+
+    # Save top 10 picks as a single JSON file
+    top10_picks_path = os.path.join(gw_dir, f"top10_picks_gw{gameweek}.json")
+    save_json(top10_picks, top10_picks_path)
 
 if __name__ == "__main__":
     current_gw = get_current_gameweek()
